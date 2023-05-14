@@ -12,10 +12,64 @@ worlds = {#Information per world to use in building and navigating maps, includi
             },
             "faction_event": {"faction1":{"name": "Faction 1",#Events that relate to that world's factions. Can turn into fights depending on outcome so should have deckbuilding parameters
                                           "stages": ["Stage 1 description","Stage 2 description","Stage 3 description"],
-                                          "fightparams": {"Name":["Llanowar Elves", "Ornithopter", "Forest"], "Color": ["G", "N"], "setcode": ["m10"]}
+                                          "fightparams": {"Name":["Llanowar Elves", "Ornithopter", "Forest"], "Color": ["G", "N"], "setcode": ["m10"]},
+                                          "negparams" : {"card_type":["Token","Basic"]}
                                          },
-                            "faction2":{"name": "Faction 2",
-                                        "stages": ["Stage 1 description","Stage 2 description","Stage 3 description"],
+                            "faction2":{"name": "Faction 2",'storykey':'storyplace',
+                                        "stages": [{'text':"Stage 1 description", #Text to display while figuring out resolution
+                                                    'card_disp' : 3,
+                                                    'new_stage': [-1,0,1], #Stage this group is set to upon each possible outcome of the event
+                                                    'method': ["battle", "trade","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                                    "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                               'rarity': ['common'],
+                                                               'color': ['G'],
+                                                                'mana_cost': ['4', 'G'],
+                                                                'mana_symbols': ['G'],
+                                                                'name': ['Nema Siltlurker'],
+                                                                'cmc': [5.0],
+                                                                'card_type': ['Creature'],
+                                                                'subtypes': ['Lizard'],
+                                                                'keywords': [],
+                                                                'oracle_text': [''],
+                                                                'legend': [False]},
+                                                               {},
+                                                               {},]},
+                                                   {'text':"Stage 2 description", #Text to display while figuring out resolution
+                                                    'card_disp' : 3,
+                                                    'new_stage': [-1,0,1], #Stage this group is set to upon each possible outcome of the event
+                                                    'method': ["battle", "trade","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                                    "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                               'rarity': ['common'],
+                                                               'color': ['G'],
+                                                                'mana_cost': ['4', 'G'],
+                                                                'mana_symbols': ['G'],
+                                                                'name': ['Nema Siltlurker'],
+                                                                'cmc': [5.0],
+                                                                'card_type': ['Creature'],
+                                                                'subtypes': ['Lizard'],
+                                                                'keywords': [],
+                                                                'oracle_text': [''],
+                                                                'legend': [False]},
+                                                               {},
+                                                               {},]},
+                                                   {'text':"Hostility description", #Final spot is reserved for when the group has been set to hostile
+                                                    'card_disp' : 3,
+                                                    'new_stage': [-1,-1,-1], #Stage this group is set to upon each possible outcome of the event
+                                                    'method': ["battle", "battle","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                                    "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                               'rarity': ['common'],
+                                                               'color': ['G'],
+                                                                'mana_cost': ['4', 'G'],
+                                                                'mana_symbols': ['G'],
+                                                                'name': ['Nema Siltlurker'],
+                                                                'cmc': [5.0],
+                                                                'card_type': ['Creature'],
+                                                                'subtypes': ['Lizard'],
+                                                                'keywords': [],
+                                                                'oracle_text': [''],
+                                                                'legend': [False]},
+                                                               {},
+                                                               {},]}],
                                         "fightparams" : {"set": [],
                                                        "rarity": ["common","uncommon","rare", "mythic rare"],
                                                        "color": ["W", "U", "B", "R", "G"],
@@ -59,7 +113,7 @@ worlds = {#Information per world to use in building and navigating maps, includi
                                                      "mana_symbols": [],
                                                      "name": [],
                                                      "cmc": [],
-                                                     "card_type": ["Token"],
+                                                     "card_type": ["Token","Basic"],
                                                      "subtypes": [],
                                                      "keywords": [],
                                                      "oracle_text": [],
@@ -79,18 +133,7 @@ worlds = {#Information per world to use in building and navigating maps, includi
                             "evnt2":{"name": "event 2",
                                      "method": "story_event","stages": ["Stage 1 description"],}
                             # Add more story types here
-                           },
-            "planeswalker": {"plane1":{"name": "planeswalker 1",#Planeswalkers the player might meet here and the info to resolve these events
-                                       "method": "battle",#Type of logic  to use to resolve event, eg a fight or a event first
-                                       "fightparams": {"Name":["Llanowar Elves", "Ornithopter", "Forest"], "Color": ["G", "N"], "setcode": ["m10"]}},
-                             "plane2":{"name": "planeswalker 2",
-                                       "method": "story_event",
-                                       "stages": ["Stage 1 description"],
-                                       "fightparams": {"Name":["Llanowar Elves", "Ornithopter", "Forest"], 
-                                                       "Color": ["G", "N"], "setcode": ["m10"]}}
-                            # Add more story types here
                            }
-            # add more node types here
         },
         "evnt_type":["battle","faction_event","faction_event","faction_event","story_event","world_event","planeswalker"],#Relative weighting of event type
         "lane_id":["W","U","B","R","G"],#Meaning of each lane in this world's minimap, usually based on colour. Will be used to key other features from this data
@@ -98,7 +141,8 @@ worlds = {#Information per world to use in building and navigating maps, includi
         "faction_event":{"W":["faction1", "faction2"],"U":["faction1", "faction2"],"B":["faction1", "faction2"],"R":["faction1", "faction2"],"G":["faction1", "faction2"]},
         "story_event":{"W":["story1"],"U":["story1"],"B":["story1"],"R":["story2"],"G":["story2"]}, 
         "planeswalker":{"W":["plane1"],"U":["plane1"],"B":["plane1"],"R":["plane1"],"G":["plane2"]},#Planeswalkers the player might encounter
-        "world_event":{"W":["evnt1"],"U":["evnt1"],"B":["evnt1"],"R":["evnt2"],"G":["evnt2"]}
+        "world_event":{"W":["evnt1"],"U":["evnt1"],"B":["evnt1"],"R":["evnt2"],"G":["evnt2"]},
+        "setcodes":["m10", "m11"] #sets to use in this plane, if they aren't specified for an event
         #Add more world details here, eg background art and bossfight details
         },
     "lrw": {#Lorwyn
@@ -122,7 +166,7 @@ worlds = {#Information per world to use in building and navigating maps, includi
                                                        "subtypes": ["Shapeshifter"]},#Values that are desired, such that at least one should be present if a card has any values for that parameter
                                         "exclusive_params" : {"set": True},#Whether the parameter list is exclusive, ie any values outside of that list are disallowed if exclusive_params[params]==True
                                         "blankparams" : {"subtypes": True}, #Dict of whether blank values are disallowed, eg colorless cards or no subtypes
-                                        "negparams" : {"card_type": ["Token"]}, #Values that are specifically not allowed
+                                        "negparams" : {"card_type": ["Token","Basic"]}, #Values that are specifically not allowed
                                          },
                               "elv":{"name": "Elves",
                                           "stages": ["Stage 1 description","Stage 2 description","Stage 3 description"],
@@ -132,7 +176,7 @@ worlds = {#Information per world to use in building and navigating maps, includi
                                                        "subtypes": ["Elf"]},#Values that are desired, such that at least one should be present if a card has any values for that parameter
                                         "exclusive_params" : {"set": True},#Whether the parameter list is exclusive, ie any values outside of that list are disallowed if exclusive_params[params]==True
                                         "blankparams" : {"subtypes": True}, #Dict of whether blank values are disallowed, eg colorless cards or no subtypes
-                                        "negparams" : {"card_type": ["Token"]}, #Values that are specifically not allowed
+                                        "negparams" : {"card_type": ["Token","Basic"]}, #Values that are specifically not allowed
                                          }
                               # Add more factions here
                              },
@@ -180,3 +224,168 @@ worlds = {#Information per world to use in building and navigating maps, includi
         #Add more world details here, eg background art and bossfight details
         },
     }
+planeswalkers = {"jace":{"name": "Jace Beleren",'storykey':'jace',
+                         "stages": [{'text':"Stage 1 description", #Text to display while figuring out resolution
+                                     'card_disp' : 3,
+                                     'new_stage': [-1,0,1], #Stage this group is set to upon each possible outcome of the event
+                                     'method': ["battle", "trade","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                     "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                 'rarity': ['common'],
+                                                 'color': ['G'],
+                                                 'mana_cost': ['4', 'G'],
+                                                 'mana_symbols': ['G'],
+                                                 'name': ['Nema Siltlurker'],
+                                                 'cmc': [5.0],
+                                                 'card_type': ['Creature'],
+                                                 'subtypes': ['Lizard'],
+                                                 'keywords': [],
+                                                 'oracle_text': [''],
+                                                 'legend': [False]},
+                                                {},
+                                                {},]},
+                                    {'text':"Stage 2 description", #Text to display while figuring out resolution
+                                     'card_disp' : 3,
+                                     'new_stage': [-1,0,1], #Stage this group is set to upon each possible outcome of the event
+                                     'method': ["battle", "trade","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                     "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                 'rarity': ['common'],
+                                                 'color': ['G'],
+                                                 'mana_cost': ['4', 'G'],
+                                                 'mana_symbols': ['G'],
+                                                 'name': ['Nema Siltlurker'],
+                                                 'cmc': [5.0],
+                                                 'card_type': ['Creature'],
+                                                 'subtypes': ['Lizard'],
+                                                 'keywords': [],
+                                                 'oracle_text': [''],
+                                                 'legend': [False]},
+                                                {},
+                                                {},]},
+                                    {'text':"Hostility description", #Final spot is reserved for when the group has been set to hostile
+                                     'card_disp' : 3,
+                                     'new_stage': [-1,-1,-1], #Stage this group is set to upon each possible outcome of the event
+                                     'method': ["battle", "battle","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                     "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                 'rarity': ['common'],
+                                                 'color': ['G'],
+                                                 'mana_cost': ['4', 'G'],
+                                                 'mana_symbols': ['G'],
+                                                 'name': ['Nema Siltlurker'],
+                                                 'cmc': [5.0],
+                                                 'card_type': ['Creature'],
+                                                 'subtypes': ['Lizard'],
+                                                 'keywords': [],
+                                                 'oracle_text': [''],
+                                                 'legend': [False]},
+                                                {},
+                                                {},]}],
+                         "fightparams" : {"color": ["U"],},#Values that are desired, such that at least one should be present if a card has any values for that parameter
+                         "exclusive_params" : {"color": True}#Should be monoblue only
+                         "blankparams" : {"color": True}, #Dict of whether blank values are disallowed, eg colorless cards or no subtypes
+                         "negparams" : {"card_type": ["Token","Basic", "Emblem"]}, #Values that are specifically not allowed
+                        },
+                 "placeholder_planeswalker":{"name": "Faction 2",'storykey':'storyplace',
+                         "stages": [{'text':"Stage 1 description", #Text to display while figuring out resolution
+                                     'card_disp' : 3,
+                                     'new_stage': [-1,0,1], #Stage this group is set to upon each possible outcome of the event
+                                     'method': ["battle", "trade","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                     "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                 'rarity': ['common'],
+                                                 'color': ['G'],
+                                                 'mana_cost': ['4', 'G'],
+                                                 'mana_symbols': ['G'],
+                                                 'name': ['Nema Siltlurker'],
+                                                 'cmc': [5.0],
+                                                 'card_type': ['Creature'],
+                                                 'subtypes': ['Lizard'],
+                                                 'keywords': [],
+                                                 'oracle_text': [''],
+                                                 'legend': [False]},
+                                                {},
+                                                {},]},
+                                    {'text':"Stage 2 description", #Text to display while figuring out resolution
+                                     'card_disp' : 3,
+                                     'new_stage': [-1,0,1], #Stage this group is set to upon each possible outcome of the event
+                                     'method': ["battle", "trade","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                     "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                 'rarity': ['common'],
+                                                 'color': ['G'],
+                                                 'mana_cost': ['4', 'G'],
+                                                 'mana_symbols': ['G'],
+                                                 'name': ['Nema Siltlurker'],
+                                                 'cmc': [5.0],
+                                                 'card_type': ['Creature'],
+                                                 'subtypes': ['Lizard'],
+                                                 'keywords': [],
+                                                 'oracle_text': [''],
+                                                 'legend': [False]},
+                                                {},
+                                                {},]},
+                                    {'text':"Hostility description", #Final spot is reserved for when the group has been set to hostile
+                                     'card_disp' : 3,
+                                     'new_stage': [-1,-1,-1], #Stage this group is set to upon each possible outcome of the event
+                                     'method': ["battle", "battle","battle"], #possible methods, corresponding to left click, middle, and right click (1,2,3)
+                                     "reward": [{'set': ['roe'],#Reward at this stage, card is specified, depends on method taken
+                                                 'rarity': ['common'],
+                                                 'color': ['G'],
+                                                 'mana_cost': ['4', 'G'],
+                                                 'mana_symbols': ['G'],
+                                                 'name': ['Nema Siltlurker'],
+                                                 'cmc': [5.0],
+                                                 'card_type': ['Creature'],
+                                                 'subtypes': ['Lizard'],
+                                                 'keywords': [],
+                                                 'oracle_text': [''],
+                                                 'legend': [False]},
+                                                {},
+                                                {},]}],
+                         "fightparams" : {"set": [],
+                                          "rarity": ["common","uncommon","rare", "mythic rare"],
+                                          "color": ["W", "U", "B", "R", "G"],
+                                          "mana_cost": [],
+                                          "mana_symbols": [],
+                                          "name": [],
+                                          "cmc": [],
+                                          "card_type": [],
+                                          "subtypes": [],
+                                          "keywords": [],
+                                          "oracle_text": [],
+                                          "legend": []},#Values that are desired, such that at least one should be present if a card has any values for that parameter
+                         "exclusive_params" : {"set": False,
+                                               "rarity": False,
+                                               "color": True,
+                                               "mana_cost": False,
+                                               "mana_symbols": False,
+                                               "name": False,
+                                               "cmc": False,
+                                               "card_type": False,
+                                               "subtypes": False,
+                                               "keywords": False,
+                                               "oracle_text": False,
+                                               "legend": False},#Whether the parameter list is exclusive, ie any values outside of that list are disallowed if exclusive_params[params]==True
+                         "blankparams" : {"set": False,
+                                          "rarity": False,
+                                          "color": False,
+                                          "mana_cost": False,
+                                          "mana_symbols": False,
+                                          "name": False,
+                                          "cmc": False,
+                                          "card_type": False,
+                                          "subtypes": False,
+                                          "keywords": False,
+                                          "oracle_text": False,
+                                          "legend": False}, #Dict of whether blank values are disallowed, eg colorless cards or no subtypes
+                         "negparams" : {"set": [],
+                                        "rarity": [],
+                                        "color": [],
+                                        "mana_cost": [],
+                                        "mana_symbols": [],
+                                        "name": [],
+                                        "cmc": [],
+                                        "card_type": ["Token","Basic"],
+                                        "subtypes": [],
+                                        "keywords": [],
+                                        "oracle_text": [],
+                                        "legend": []}, #Values that are specifically not allowed
+                        }
+}

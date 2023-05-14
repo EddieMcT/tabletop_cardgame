@@ -145,7 +145,7 @@ class Minimap:
     def generate(self, special_steps = None):#Can be used to regenerate a map if desired. Probably unused?
         self.nodes, self.map, self.connections = generate_minimap(self.length, self.width, special_steps, world_name = self.world_name)
 
-    def draw(self, screen, offset):
+    def draw(self, screen, offset, playerpos = None):
         dispx = self.dispx
         dispy = self.dispy #spacings of nodes, to be adjusted during iteration
         borderoffset = self.borderoffset
@@ -162,6 +162,8 @@ class Minimap:
                     for j2 in range(self.width):
                         if conn[j1,j2]:
                             pygame.draw.line(screen,(255,128,128),((i-offset) * dispx + borderoffset, j1*dispy + borderoffset), ((i-offset+1)*dispx + borderoffset, j2*dispy + borderoffset))
+        if not playerpos is None:
+            pygame.draw.circle(screen, (255,128,100),(borderoffset, playerpos * dispy + borderoffset), 35)
                             
     def is_click_on_node(self, x, y, offset):
         dispx = self.dispx

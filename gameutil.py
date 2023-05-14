@@ -8,7 +8,7 @@ from globals import GlobalVariables
 global_vars = GlobalVariables()
 
 def draw_card(deck, player, card_data = None):
-    if len(deck) > 0:
+    if card_data is not None or len(deck) > 0:
         if card_data == None:
             card_data = deck.pop(0)
         setcode = card_data["set"][0]#These variables always exist as lists, but only one should be present for name and set
@@ -51,10 +51,41 @@ class card():#Object that is present and rendered in a scene
             self.x = pos[0] - self.artwork.get_width() // 2
             self.y = pos[1] - self.artwork.get_height() // 2
     
-    def handle_right_click(self, pos):
+    def handle_right_click(self, pos, trade = False):
+        trade = global_vars.trade
         if self.x <= pos[0] <= self.x + self.artwork.get_width() and self.y <= pos[1] <= self.y + self.artwork.get_height():
-            self.tapped = not self.tapped
-            self.artwork = pygame.transform.rotate(self.artwork, -90 if self.tapped else 90)
+            if trade:
+                if self.owner == "main":
+                    value = 1
+                elif self.card_data['rarity'] == 'mythic':
+                    value = 7
+                elif self.card_data['rarity'] == 'rare':
+                    value = 5
+                elif self.card_data['rarity'] == 'uncommon':
+                    value = 3
+                else:
+                    value = 1
+                
+                if self.owner == "opponent" and not self.tapped:
+                    purchase = True
+                elif self.owner == "main" and self.tapped:
+                    purchase = True
+                else:
+                    purchase = False
+                if purchase: #Try to pay for the new item
+                    if global_vars.currency >= value:
+                        global_vars.currency -= value
+                        success = True
+                    else:
+                        success = False
+                else:
+                    global_vars.currency += value
+                    success = True
+            else: #Not trading, no need for money checks
+                success = True
+            if success:
+                self.tapped = not self.tapped
+                self.artwork = pygame.transform.rotate(self.artwork, -90 if self.tapped else 90)
     def draw(self):
         global_vars.screen.blit(self.artwork, (self.x, self.y))
     

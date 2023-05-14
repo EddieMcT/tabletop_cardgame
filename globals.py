@@ -19,4 +19,10 @@ class GlobalVariables:
             cls._instance.num_cards = 0
             cls._instance.minimap = None
             cls._instance.minimap_pos = 0
+            cls._instance.minimap_lane = 0
+            cls._instance.dialog = None
+            cls._instance.trade = False
+            cls._instance.currency = 0 #Wallet of the main character
+            cls._instance.node_details = None
+            cls._instance.storylines = {'storyplace':0} #Something to be moved to a save file? Information about where the player is in each story
         return cls._instance

@@ -43,11 +43,11 @@ def match(card_e, params, exclusive, negparams=None, blankparams=None):
                     if len(card_e[param]) == 0:
                         return False
 
-            if len(card_e[param]) and len(values): #Blanks checked separately, therefore only check for overlap with values 
+            if len(card_e[param]): #Blanks checked separately, therefore only check for overlap with values 
                 if exclusive_param:
                     if not set(card_e[param]).issubset(set(values)):
                         return False
-                else:
+                elif len(values): #Non-exclusive empty lists should permit everything
                     if not set(card_e[param]).intersection(set(values)):
                         return False
 
@@ -58,10 +58,56 @@ def match(card_e, params, exclusive, negparams=None, blankparams=None):
 def select_cards(cards, n, params, exclusive=True, negparams=None, blankparams=None):
     matching_cards = [card_e for card_e in cards if match(card_e, params, exclusive, negparams, blankparams)]
     if len(matching_cards) < n:
-        return random.sample(matching_cards, len(matching_cards))
+        return random.choices(matching_cards, k=n) #choose with replacement, should this always be used instead of sample?
     else:
         return random.sample(matching_cards, n)
 
+def select_lands(n = 20, card_list = None, sets = None):
+    ratios = {"W":0, "U":0, "B":0,"R":0,"G":0,"N":0}
+    minimums = {"W":0, "U":0, "B":0,"R":0,"G":0,"N":0}
+    for card in card_list:
+        card_ratios = {"W":0, "U":0, "B":0,"R":0,"G":0,"N":0}
+        for c in card["color"]:
+            ratios[c] += 1
+            card_ratios[c] += 1
+        for c, v in card_ratios.items():
+            if v > minimums[c]:
+                ratios[c] = v
+    total_c = 0
+    
+    for c, v in ratios.items():
+        total_c += v #calculate inital total of colours
+        
+    for c, v in ratios.items(): #reweight so that there's a more even spread of lands
+        if v > 0:
+            if v > total_v*0.9:
+                ratios[c] = 3
+            elif v > total_v*0.5:
+                ratios[c] = 2
+            else:
+                ratios[c] = 1
+    total_c = 0
+    for c, v in ratios.items():
+        total_c += v #recalculate totals in weighted lists
+    if total_c == 0:
+        ratios = {"W":1, "U":3, "B":1,"R":0,"G":0,"N":0} #Default arrangement for colorless decks
+        total_c = 5
+    for c, v in ratios.items():
+        ratios[c] = max(int(v * n/total_c),minimums[c])#Currently just one step, weighted ratio will be used unless it's less than the minimum amount needed
+    land_list = []
+    for c, v in ratios.items():
+        parameters = {"set": [], 'card_type': ['Basic'],'color': [c]}
+        exclusive={"set": False, 'card_type': False,'color': True}
+        blankparams={"set": True, 'card_type': True,'color': True}
+        if c == "N":
+            parameters["color"] = []
+            blankparams["color"] = False
+        if sets is not None:
+            parameters["set"] = sets
+            exclusive["set"] = True
+        land_list.append(i for i in select_cards(shortened_card_data, v, params = parameters, exclusive=exclusive, negparams=None, blankparams=blankparams))
+    return(land_list)
+        
 with open("shortened_card_data.json", "r") as file:
     shortened_card_data = json.load(file)
     
