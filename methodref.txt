@@ -1,0 +1,34 @@
+All events lead to the battle game state, but not all events involve an actual battle to resolve them. The method used depends on the choice of the player.
+Regardless of event type, cards of the opponent that are still on screen and tapped at the end of the battle will be awarded to the player.
+Likewise, an event that counts as a trade/allows the player to sell cards will remove any cards of the player's deck which are present and tapped (doesn't happen during battle, only events where currency is used).
+
+For events that might involve fighting, basic land lists are generated for both player and GM as well. Basic lands cannot be bought, though non-basics can.
+Currently the player has no control over the basic lands they're given, but they should match the deck's requirements (emphasis is on mitigating the worst case situations in terms of on-curve play probabilities).
+Any time either player or GM would draw a card, they can choose to draw from their main or basic library.
+As normal, a player loses if their health reaches 0, or if they try to draw without any cards in *either* library.
+These represent a physical and a mental defeat, respectively (other win conditions, eg poison, are possible too as normal).
+A near defeat is still a victory, but physical wounds can persist.
+If a player doesn't recover from their injuries before the end of the battle, their HP will stay at the lower value.
+Ie, at the end of each battle, their health becomes the minimum of their health at the start and at the end of that battle, so they might enter the next fight with fewer than 20 HP.
+
+Each event may have any number of requirements, and failing any one of them will prevent that option from being seen by the player (currently it doesn't prevent them from being chosen, but this should be changed before proper play).
+Some of these requirements depend on a 'check' of the player's own cards, in which 3 cards are drawn at random from their deck for comparisons.
+
+methods to resolve events:
+battle: a regular fight, played as a match following regular rules, player chooses one card at the end of the battle to claim as the spoils of war
+trade: the battle doesn't take place, any number of cards can be bought (and sold) using the currency of aether. Any cards which match the seller's preferred cards will give an extra aether (currently only given after the battle is over), and are tracked for certain quest uses.
+puzzle: three random cards are drawn by the GM and displayed. The GM describes a situation involving those cards, which the player can intervene in (ie helping one side to win a fight). They first draw 7 cards (land or non-land as chosen) as normal, and will have one turn to cast any spells before events begin to unfold. Unlike a regular match, the player can choose to begin their turn with any number of lands in play from their hand (regular limits apply on their turn though). Summoning sickness applies during their turn, but if they want a creature to join an attack that occurs during the event this is allowed.
+summon: much like a trade, but instead of new cards the player can use aether to regain cards they've previously banished.
+reward: no fighting, trading, or puzzlign necessary, the player simply receives any number of cards.
+aether: the same as reward, but the player is given 5 aether (this should maybe be made more flexible)
+rest: as with reward, but the player's HP is restored to 20.
+
+modifiers to methods:
+if a method begins with m_, eg m_battle or m_trade, the GM's deck will be replaced with a copy of the player's own deck. The corresponding event (eg battle or trade) then happens as normal. This is currently incompatible with summons and puzzles (I should fix the latter)
+
+Requirement types for events:
+match: at least one of the revealed cards of the player has to match the usual deckbuilding rules of the event (ie an elf for meeting elves).
+enemy: no revealed cards may match the events enemy's characteristics (defined per event type as enemyparams).
+giftx: The player needs to have previously traded x cards with this faction that match the faction's preferences. This counter is then reset to 0 if the option is chosen, so repeated sales will be needed for some stories.
+costx: The player needs to have at least x aether, and will lose that many upon choosing the event (try to tell them beforehand, or include an appropriate reward)
+story_c_x: Where story is the key of some other story, c is a letter (l, g, c) indicating whether the player should have no more, no less, or exactly, X progress in that story.

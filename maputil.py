@@ -3,9 +3,10 @@ import json
 import numpy as np
 import pygame
 import os
+#import math
 
 from globals import GlobalVariables
-from gamedata import worlds
+from gamedata import worlds, planeswalkers, base_events
 
 global_vars = GlobalVariables()
 
@@ -64,31 +65,41 @@ def linkage(l,l2 = None, rigid = 0.5, fill = 0.1): #Take two lists of nodes (bin
             complete = False
     return(conn)
     
-def generate_random_node(world_name, lane_idx, exists = True,is_start=False):
+def generate_random_node(world_name, lane_idx, exists = True,is_start=False, is_end = False):
     if is_start:
-        return {"event": "start", "details": "Beginning of your journey on this world."}
+        return {"event": "start", "data" : base_events["start"],"details": "Beginning of your journey on this world."}
 
     world = worlds[world_name]
     event_type_weights = world["evnt_type"]
     event_type = random.choice(event_type_weights)#Kind of event, eg faction or battle or story
+    if is_end:
+        event_type = "boss"
     lane = world["lane_id"][lane_idx] #Description of that lane, usually colour
-    
-    event = world["events"][event_type] #full description of that event type, eg all factions
-    
-    if event_type == "battle":
-        data = event[lane]
-        details = "A random battle, with a chance to earn a reward."
+    if event_type == "planeswalker":#Handled separately as there is no world-specific data per planeswalker
+        event_key = random.choice(world[event_type][lane])#There is, however, a list of the planeswalkers found there
+        data = planeswalkers[event_key] #full description of that planeswalker
+        details = "A fellow planeswalker"
+    elif event_type == "base":#Handled separately as there is no world-specific data per planeswalker
+        event_key = random.choice(world[event_type][lane])#There is, however, a list of the planeswalkers found there
+        data = base_events[event_key] #full description of that planeswalker
+        details = "A standard event"
     else:
-        event_key = random.choice(world[event_type][lane])
-        data = event[event_key]
-        if event_type == "faction_event":
-            details = f"A meeting with the {data['name']}, potential friends or foes."
-        elif event_type == "story_event":
-            details = ""
-        elif event_type == "world_event":
-            details = ""
-        elif event_type == "planeswalker":
-            details = ""
+        event = world["events"][event_type] #full description of that event type, eg all factions
+    
+        if event_type == "battle":
+            data = event[lane]
+            details = "A random battle, with a chance to earn a reward."
+        else:
+            event_key = random.choice(world[event_type][lane])
+            data = event[event_key]
+            if event_type == "faction_event":
+                details = f"A meeting with the {data['name']}, potential friends or foes."
+            elif event_type == "story_event":
+                details = ""
+            elif event_type == "world_event":
+                details = ""
+            else:
+                details = ""
         # Add elif branches for other event types to fill in details
     return {"event": event_type, "details": details, "data" : data}
 def generate_random_locations(num_nodes, num_lanes):
@@ -117,7 +128,7 @@ def generate_minimap(num_steps=10, num_lanes=5, special_steps=None, world_name =
             num_nodes = random.choice([2, 3, 3, 3, 4, 4, 5])
         node_locations = generate_random_locations(num_nodes, num_lanes)
         minimap.append(node_locations)
-        step_nodes = [generate_random_node(world_name, i, node_locations[i],is_start=(step == 0)) for i in range(num_lanes)]
+        step_nodes = [generate_random_node(world_name, i, node_locations[i],is_start=(step == 0), is_end=(step == num_steps-1)) for i in range(num_lanes)]
         nodes.append(step_nodes)
 
         if prev_step: #Create, if possible, links from the previous step to this one
@@ -129,7 +140,7 @@ def generate_minimap(num_steps=10, num_lanes=5, special_steps=None, world_name =
 
 class Minimap:
     def __init__(self, width, length, special_steps = None, world_name = "Place"):
-        self.world_name = "worldname"
+        self.world_name = world_name
         self.width = width
         self.length = length
         self.map = None #list of lists indicating presence (1) or absence(0) of nodes at each point
@@ -138,32 +149,94 @@ class Minimap:
         self.dispx = 400
         self.dispy = 150 #spacings of nodes, to be adjusted during iteration
         self.borderoffset = 100
-        self.maxdisp = 5
+        self.ypositions = [1, 0.85, 0.73, 0.634, 0.5572, 0.49576, 0.44661, 0.40729, 0.37583, 0.35066, 0.33053, 0.31442, 0.30154, 0.29123, 0.28299]
+        self.maxdisp = 10
+        if "lane_id" in worlds[world_name]:
+            self.lane_id = worlds[world_name]["lane_id"]
+        else:
+            self.lane_id = ["W","U","B","R","G"]
+        if "setcodes" in worlds[world_name]:
+            self.sets = worlds[world_name]["setcodes"]
+        else:
+            self.sets = None
+        if "colorcodes" in worlds[world_name]:
+            self.colorcodes = worlds[world_name]["colorcodes"]
+        else: 
+            self.colorcodes = {"W":(250,250,230),#White
+                        "U":(20,50,250),#Blue
+                        "B":(80,0,150),#Violet/Black
+                        "R":(200,30,20),#Red
+                        "G":(10,200,30),#Green
+                        "C":(120,120,120),#Grey
+                              }#The first five should be enough, but who knows
         # Call generate_minimap function here and set the background, nodes, and connections
-        self.nodes, self.map, self.connections = generate_minimap(self.length,self.width, special_steps)
+        self.nodes, self.map, self.connections = generate_minimap(self.length,self.width, special_steps, world_name=world_name)
 
     def generate(self, special_steps = None):#Can be used to regenerate a map if desired. Probably unused?
         self.nodes, self.map, self.connections = generate_minimap(self.length, self.width, special_steps, world_name = self.world_name)
 
     def draw(self, screen, offset, playerpos = None):
+        screen.fill((0,0,0))
+        pygame.draw.rect(screen, (100,150,200),pygame.Rect(0, 0, global_vars.screen_width, global_vars.screen_height*0.3))
         dispx = self.dispx
         dispy = self.dispy #spacings of nodes, to be adjusted during iteration
         borderoffset = self.borderoffset
         maxdisp = self.maxdisp #number of nodes ahead to display
-        for i in range(offset,min(offset+maxdisp,self.length)): #Find nodes, this can be cleaned up!!!
+        ypositions = self.ypositions
+        for i in range(max(offset-1,0),min(offset+maxdisp,self.length)): #Find nodes, this can be cleaned up!!!
             nodes = self.map[i]
-            for j in range(self.width):
-                if nodes[j]:
-                    eventtype = self.nodes[i][j]['event']
-                    pygame.draw.circle(screen, (128,128,255),((i-offset) * dispx + borderoffset, j * dispy + borderoffset), 25)
+            scale = 1- max(i-offset, 0)/maxdisp
+            scale1 = 1- max(i+1-offset, 0)/maxdisp
+            ypos = global_vars.screen_height*ypositions[max(i-offset,0)]#- int((i-offset+1.5)*dispy)
+            ypos1 = global_vars.screen_height*ypositions[max(i-offset+1,0)]
             if i < self.length-1: #Draw connections, can't do for last step in map of course
                 conn = self.connections[i]
                 for j1 in range(self.width):
+                    xpos = int((((j1+0.5)/self.width - 0.5) * scale +0.5)* global_vars.screen_width)
                     for j2 in range(self.width):
                         if conn[j1,j2]:
-                            pygame.draw.line(screen,(255,128,128),((i-offset) * dispx + borderoffset, j1*dispy + borderoffset), ((i-offset+1)*dispx + borderoffset, j2*dispy + borderoffset))
+                            xpos1 = int((((j2+0.5)/self.width - 0.5) * scale1 +0.5)* global_vars.screen_width)
+                            pygame.draw.line(screen,(255,128,128),(xpos,ypos),(xpos1,ypos1))#((i-offset + (offset > 0)) * dispx + borderoffset, (j1*dispy + borderoffset)*scale), ((i-offset+1+ (offset > 0))*dispx + borderoffset, (j2*dispy + borderoffset)*scale1))
+            for j in range(self.width):
+                xpos = int((((j+0.5)/self.width - 0.5) * scale +0.5)* global_vars.screen_width)
+                if nodes[j]:
+                    eventtype = self.nodes[i][j]['event']
+                    if eventtype in ["battle", "boss"]:#Shield shape
+                        points = np.asarray([k for k in range(5)])-2
+                        points = np.stack((np.sin(points), np.cos(points)), axis = -1)*25*scale
+                        points = np.add(points, np.asarray([xpos, ypos]))#(i-offset + (offset > 0)) * dispx + borderoffset, (j * dispy + borderoffset)*scale]))
+                        pygame.draw.polygon(screen, self.colorcodes[self.lane_id[j]],points)
+                    elif eventtype in ["story_event", "planeswalker"]:
+                        points = np.asarray([[0,1],[0.1,0.4],[0.35,0.2],[0.7,0.1],[0.8,-0.1],#Base
+                                             [0.7,-0.8],#Outer peak
+                                             [0.6,-0.2],
+                                             [0.55,-0.1],
+                                             [0.5,-0.2],
+                                             [0.4,-0.9],#second peak
+                                             [0.3,-0.3],
+                                             [0.2,-0.1],
+                                             [0.1,-0.3],
+                                             [0,-1]]) #Middle peak
+                        revpoints = np.array(np.flip(points,0))
+                        revpoints[:, 0] *= -1
+                        points = np.concatenate((points, revpoints), axis=0)
+                        points = points*35*scale
+                        points = np.add(points, np.asarray([xpos, ypos]))
+                        pygame.draw.polygon(screen, self.colorcodes[self.lane_id[j]],points)
+                    elif eventtype in ["base", "world_event"]:#Horizon shape
+                        points = np.asarray([k for k in range(10)])+0.2124+np.pi/2
+                        points = np.stack((np.sin(points), np.cos(points)), axis = -1)*25*scale
+                        points = np.add(points, np.asarray([xpos, ypos]))
+                        pygame.draw.polygon(screen, self.colorcodes[self.lane_id[j]],points)
+                    elif eventtype in ["factions"]:
+                        points = np.asarray([k*np.pi for k in range(7)])
+                        points = np.stack((np.sin(points), np.cos(points)), axis = -1)*25*scale
+                        points = np.add(points, np.asarray([xpos, ypos]))
+                        pygame.draw.polygon(screen, self.colorcodes[self.lane_id[j]],points)
+                    else:
+                        pygame.draw.circle(screen, self.colorcodes[self.lane_id[j]],(xpos, ypos), 25*scale)
         if not playerpos is None:
-            pygame.draw.circle(screen, (255,128,100),(borderoffset, playerpos * dispy + borderoffset), 35)
+            pygame.draw.circle(screen, (255,128,100),(borderoffset + int( dispx * 0.2*(offset+1)), 150),35)# playerpos * dispy + borderoffset), 35)
                             
     def is_click_on_node(self, x, y, offset):
         dispx = self.dispx
@@ -174,12 +247,13 @@ class Minimap:
 
         for i in range(offset, min(offset + maxdisp, self.length)):
             nodes = self.map[i]
+            scale = 1- max(i-offset, 0)/maxdisp
+            node_y = global_vars.screen_height*self.ypositions[max(i-offset,0)]
             for j in range(self.width):
                 if nodes[j]:
-                    node_x = (i - offset) * dispx + borderoffset
-                    node_y = j * dispy + borderoffset
+                    node_x = int((((j+0.5)/self.width - 0.5) * scale +0.5)* global_vars.screen_width)
                     distance = ((x - node_x) ** 2 + (y - node_y) ** 2) ** 0.5
-                    if distance <= click_tolerance:
+                    if distance <= click_tolerance*scale:
                         return i, j
 
         return None, None

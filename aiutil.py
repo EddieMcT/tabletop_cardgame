@@ -21,21 +21,25 @@ color_combinations = get_color_combinations(colors)
 color_combinations+= [random.sample(["W", "U","B", "R","G", ""],3) for _ in range(32)]
 
 def deck_costs(deck):
-    symbols = ["W", "U", "B","R","G","C"]
-    ratios = np.zeros(len(symbols))
-    minimums = np.zeros(len(symbols))
-    fractions = np.zeros(len(symbols))
-    for i in range(len(symbols)):
-        c = symbols[i]
-        costs = [card["mana_cost"].count(c) for card in deck]
-        devotions = [card["mana_cost"].count(c)/max(card["cmc"][0], 1) for card in deck]
-        ratios[i] = sum(costs)/len(deck)
-        fractions[i] = sum(devotions)/len(deck)
-        minimums[i] = max(costs)
-    #ratios = ratios/(max(np.sum(ratios),1))
-    costs = np.asarray([card["cmc"][0] for card in deck])
-    colorscount = np.asarray([sum([min(card["mana_cost"].count(c),0.2) for c in symbols]) for card in deck])
-    return(np.concatenate((ratios, minimums*0.2, fractions*2, [np.min(costs)*0.05], [np.max(costs)*0.05], [np.mean(costs)*0.05], [np.mean(colorscount)],[np.max(colorscount)])), minimums)#1*23 array of normalised values, and a separate mins array
+    
+    if len(deck):
+        symbols = ["W", "U", "B","R","G","C"]
+        ratios = np.zeros(len(symbols))
+        minimums = np.zeros(len(symbols))
+        fractions = np.zeros(len(symbols))
+        for i in range(len(symbols)):
+            c = symbols[i]
+            costs = [card["mana_cost"].count(c) for card in deck]
+            devotions = [card["mana_cost"].count(c)/max(card["cmc"][0], 1) for card in deck]
+            ratios[i] = sum(costs)/len(deck)
+            fractions[i] = sum(devotions)/len(deck)
+            minimums[i] = max(costs)
+        #ratios = ratios/(max(np.sum(ratios),1))
+        costs = np.asarray([card["cmc"][0] for card in deck])
+        colorscount = np.asarray([sum([min(card["mana_cost"].count(c),0.2) for c in symbols]) for card in deck])
+        return(np.concatenate((ratios, minimums*0.2, fractions*2, [np.min(costs)*0.05], [np.max(costs)*0.05], [np.mean(costs)*0.05], [np.mean(colorscount)],[np.max(colorscount)])), minimums)#1*23 array of normalised values, and a separate mins array
+    else:
+        return(np.zeros(23),np.zeros(6))
 def soft_integer_round(x, factor=0.8):
     return torch.add(x , (torch.sin((0.5+x) * 2 * math.pi) / (2 * math.pi)),alpha=factor)
 
@@ -167,7 +171,7 @@ output_size = 6  # number of possible actions (land_ratios)
 land_policy_net = ContinuousPolicyNetwork(input_size, hidden_size, output_size, 2)
 
 
-def train_land_model(policy_net = land_policy_net, num_episodes = 500, prelearning = 1000, deck_refresh = 1, learning_rate = 1e-2):
+def train_land_model(policy_net = land_policy_net, num_episodes = 500, prelearning = 1000, deck_refresh = 1, learning_rate = 1e-2): #This code isn't actually needed in the game now that the model's trained and saved, but I'm just really proud of it. I might later add a feature that retrains a little (10 iterations) on each deck as it's predicted.
     optimizer = optim.Adam(policy_net.parameters(), lr=learning_rate)
     for episode in range(prelearning):#Quicker training to reconstruct minimums (so it starts with something playable for the real training)
         if episode % deck_refresh == 0: #Keep decks for a short length of time, so that training can go towards something consistent for a while
@@ -250,4 +254,39 @@ land_policy_net.load_state_dict(torch.load('land_select_model.pth'))
 # Make sure to call model.eval() method before inference
 land_policy_net.eval()
 
-
+def select_lands(decklist,total_lands = 20, sets = None,tolerance = 1, policy_net = land_policy_net):
+    cost_ratios, minimums = deck_costs(decklist) #One normalised 1*23 array, and the minimums
+    state = torch.tensor(np.concatenate((cost_ratios, np.asarray([total_lands*0.05]))), dtype=torch.float32).unsqueeze(0)
+    # Sample action (land_ratios) from the landgen policy
+    land_ratios = policy_net(state).squeeze(0)
+    land_ratios = torch.abs(land_ratios)
+    land_ratios = torch.mul(land_ratios, total_lands*0.2)#Undo normalization
+    
+    land_ratios = land_ratios.detach().numpy().round(0).astype(int)
+    land_ratios = np.maximum(land_ratios, minimums)
+    
+    if sum(minimums):#Make obvious fixes to the land lists. Keep these changes to a minimum though if they will change ratios
+        land_ratios = np.where(minimums==0,0,land_ratios)
+        while sum(land_ratios) > total_lands + tolerance and not min(minimums):
+            land_ratios = np.where(minimums==0,land_ratios-1,land_ratios)
+        land_ratios = np.maximum(land_ratios, 0)
+        while sum(land_ratios) < total_lands - tolerance:
+            land_ratios = np.where(minimums!=0,land_ratios+1,land_ratios)
+    land_list = []
+    for c, v in zip(colors, land_ratios):
+        if v:
+            v = int(v)
+            parameters = {"set": [], 'card_type': ['Basic'],'color': [c]}
+            exclusive={"set": False, 'card_type': False,'color': True}
+            blankparams={"set": True, 'card_type': True,'color': True}
+            if c == "C":
+                parameters["color"] = []
+                blankparams["color"] = False
+            if sets is not None:
+                parameters["set"] = sets
+                exclusive["set"] = True
+            
+            sublist = select_cards(shortened_card_data, v, params = parameters, exclusive=exclusive, negparams=None, blankparams=blankparams)
+            for i in sublist:
+                land_list.append( i )
+    return(land_list)

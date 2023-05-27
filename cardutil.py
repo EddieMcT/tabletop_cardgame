@@ -6,15 +6,14 @@ import os
 
 from globals import GlobalVariables
 
-global_vars = GlobalVariables()
-screen = global_vars.screen
-screen_width = global_vars.screen_width
-screen_height = global_vars.screen_height
-scene = global_vars.scene
-decklist = global_vars.decklist
-gm_deck = global_vars.gm_deck
-battle_deck = global_vars.battle_deck
-
+#global_vars = GlobalVariables()
+#screen = global_vars.screen
+#screen_width = global_vars.screen_width
+#screen_height = global_vars.screen_height
+#scene = global_vars.scene
+#decklist = global_vars.decklist
+#gm_deck = global_vars.gm_deck
+#battle_deck = global_vars.battle_deck
 
     
 def match(card_e, params, exclusive, negparams=None, blankparams=None):
@@ -55,12 +54,13 @@ def match(card_e, params, exclusive, negparams=None, blankparams=None):
 
 
 
-def select_cards(cards, n, params, exclusive=True, negparams=None, blankparams=None):
+def select_cards(cards, n, params, exclusive=True, negparams=None, blankparams=None): #This, and the match function, and bottlenecks at gamesetup and should be improved
     matching_cards = [card_e for card_e in cards if match(card_e, params, exclusive, negparams, blankparams)]
-    if len(matching_cards) < n:
+    if len(matching_cards):# < n:
         return random.choices(matching_cards, k=n) #choose with replacement, should this always be used instead of sample?
     else:
-        return random.sample(matching_cards, n)
+        return([])
+    #    return random.sample(matching_cards, n)
 
 def select_lands(n = 20, card_list = None, sets = None):
     ratios = {"W":0, "U":0, "B":0,"R":0,"G":0,"N":0}
@@ -121,6 +121,7 @@ sample_deck = [{'set': ['con'],#Output of a previous select_cards query
   'card_type': ['Creature'],
   'subtypes': ['Rhino', 'Soldier'],
   'keywords': ['Trample'],
+  'watermark': [],
   'oracle_text': ["Trample\nAt the beginning of your upkeep, if you control a blue permanent, you may create a token that's a copy of Mirror-Sigil Sergeant."],
   'legend': [False]},
  {'set': ['zen'],
@@ -133,31 +134,34 @@ sample_deck = [{'set': ['con'],#Output of a previous select_cards query
   'card_type': ['Creature'],
   'subtypes': ['Bird', 'Ally'],
   'keywords': ['Flying'],
+  'watermark': [],
   'oracle_text': ['Flying\nWhenever Umara Raptor or another Ally enters the battlefield under your control, you may put a +1/+1 counter on Umara Raptor.'],
   'legend': [False]},
- {'set': ['m11'],
+ {'set': ['ala'],
+  'rarity': ['common'],
+  'color': ['G'],
+  'mana_cost': ['1', 'G'],
+  'mana_symbols': ['G'],
+  'name': ['Cylian Elf'],
+  'cmc': [2.0],
+  'card_type': ['Creature'],
+  'subtypes': ['Elf', 'Scout'],
+  'keywords': [],
+  'watermark': [],
+  'oracle_text': [''],
+  'legend': [False]},
+ {'set': ['mor'],
   'rarity': ['common'],
   'color': ['B'],
-  'mana_cost': [],
-  'mana_symbols': [],
-  'name': ['Swamp'],
-  'cmc': [0.0],
-  'card_type': ['Basic', 'Land'],
-  'subtypes': ['Swamp'],
-  'keywords': [],
-  'oracle_text': ['({T}: Add {B}.)'],
-  'legend': [False]},
- {'set': ['shm'],
-  'rarity': ['common'],
-  'color': ['R'],
-  'mana_cost': [],
-  'mana_symbols': [],
-  'name': ['Mountain'],
-  'cmc': [0.0],
-  'card_type': ['Basic', 'Land'],
-  'subtypes': ['Mountain'],
-  'keywords': [],
-  'oracle_text': ['({T}: Add {R}.)'],
+  'mana_cost': ['B'],
+  'mana_symbols': ['B'],
+  'name': ['Prickly Boggart'],
+  'cmc': [1.0],
+  'card_type': ['Creature'],
+  'subtypes': ['Goblin', 'Rogue'],
+  'keywords': ['Fear'],
+  'watermark': [],
+  'oracle_text': ["Fear (This creature can't be blocked except by artifact creatures and/or black creatures.)"],
   'legend': [False]},
  {'set': ['roe'],
   'rarity': ['common'],
@@ -169,5 +173,6 @@ sample_deck = [{'set': ['con'],#Output of a previous select_cards query
   'card_type': ['Creature'],
   'subtypes': ['Lizard'],
   'keywords': [],
+  'watermark': [],
   'oracle_text': [''],
   'legend': [False]}]
