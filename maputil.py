@@ -79,21 +79,21 @@ def generate_random_node(world_name, lane_idx, exists = True,is_start=False, is_
         event_key = random.choice(world[event_type][lane])#There is, however, a list of the planeswalkers found there
         data = planeswalkers[event_key] #full description of that planeswalker
         details = "A fellow planeswalker"
-    elif event_type == "base":#Handled separately as there is no world-specific data per planeswalker
-        event_key = random.choice(world[event_type][lane])#There is, however, a list of the planeswalkers found there
+    elif event_type == "base":
+        event_key = random.choice(world[event_type][lane])
         data = base_events[event_key] #full description of that planeswalker
         details = "A standard event"
     else:
         event = world["events"][event_type] #full description of that event type, eg all factions
     
         if event_type == "battle":
-            data = event[lane]
+            data = event
             details = "A random battle, with a chance to earn a reward."
         else:
             event_key = random.choice(world[event_type][lane])
             data = event[event_key]
             if event_type == "faction_event":
-                details = f"A meeting with the {data['name']}, potential friends or foes."
+                details = "Faction"#f"A meeting with the {data['name']}, potential friends or foes."
             elif event_type == "story_event":
                 details = ""
             elif event_type == "world_event":

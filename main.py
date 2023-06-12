@@ -134,7 +134,9 @@ def construct_deck(i=15, node_details={}, card_list = shortened_card_data,boss=F
     if i < 2:
         negparams["rarity"].append("uncommon")
     if planar_reqs is not None:
-        params.update({"set" : planar_reqs})
+        if not "set" in params:
+            print(params)
+            params.update({"set" : planar_reqs})
     return(select_cards(card_list, i, params, exclusive=exclusive,negparams=negparams, blankparams=blankparams))
 
 def update_minimap(event_queue = []):
@@ -161,7 +163,7 @@ def update_minimap(event_queue = []):
                     print(node_details)#Move to selected node if possible
                     if not node_details is None: #TO DO check if the node is available to move to (ie has a connection to the current position
                         #create appropriate dialogue box, handle events there eventually resulting in below, possibly via some storyline stuff
-                        global_vars.node_details = node_details['data']
+                        global_vars.node_details = node_details['data'].run(j, global_vars.storylines)
                         global_vars.scene = []
                         global_vars.dialog == None
                         global_vars.minimap_pos = i
@@ -274,27 +276,23 @@ def update_event(event_queue = []):
     global global_vars
     if 'storykey' in global_vars.node_details:
         key = global_vars.node_details['storykey']
-        if key in global_vars.storylines:#If storyline is tracked, read its current progress
-            story = global_vars.storylines[key]
         if key in global_vars.gifts:#If storyline is tracked, read its current progress
             gifts = global_vars.gifts[key]
         else:#If storyline isn't yet tracked, start it at 0
-            global_vars.storylines[key] = 0
             global_vars.gifts[key] = 0
             gifts = 0
-            story = 0
     else: #If storyline doesn't have progression, it's always 0
         story = 0
-    stagedata = global_vars.node_details['stages'][story]
-    if 'card_disp' in stagedata and stagedata['card_disp'] > 0:
-        while len(global_vars.scene) < stagedata['card_disp'] and len(global_vars.battle_deck):#Draw and show the appropriate number of cards
+    stagedata = global_vars.node_details#['stages'][story]#Moved this logic to the story classes themselves, so that update event is only ever given the relevant stage
+    if stagedata['card_disp'] > 0:
+        while len(global_vars.scene) < stagedata['card_disp'] and len(global_vars.battle_deck):#Draw and show up to the appropriate number of cards
             draw_card(global_vars.battle_deck, "main")
     if len(global_vars.scene) >0 and  global_vars.dialog == None: #Just once, reposition the cards (doesn't need to happen every time)
         for i in range(len(global_vars.scene)):
             global_vars.scene[i].x = global_vars.scene[i].artwork.get_width() // 4  + (i+1) * global_vars.screen_width // (len(global_vars.scene)+2) 
             global_vars.scene[i].y = global_vars.screen_height // 2
     if global_vars.dialog == None:
-        if 'text' in stagedata:
+        if 'text' in stagedata:#This check should be redundant with gamedata classes
             dialog = stagedata['text']
         else:
             dialog = ""
@@ -332,7 +330,7 @@ def update_event(event_queue = []):
         if "bossreward" in stagedata:
             matchreq, enemyreq = check_matches() #Recheck these before clearing the scene, in case they're used for boss requirements
         global_vars.scene = []
-        if ("plnswlker" in  global_vars.node_details) and  global_vars.node_details["plnswlker"]: #What's this second check for, is it actually used?
+        if ("planar" in  global_vars.node_details) and  global_vars.node_details["planar"]:#Check whether to allow things outside of the current plane
             planar_reqs= None
         else:
             planar_reqs = global_vars.minimap.sets
@@ -355,6 +353,7 @@ def update_event(event_queue = []):
             numcards = int(stagedata["diff"][choicenum%max(len(stagedata["diff"]),1)])
         else:
             numcards = int(global_vars.minimap_pos+5)
+        print(global_vars.node_details)
         global_vars.gm_deck = construct_deck(numcards, global_vars.node_details, shortened_card_data, planar_reqs = planar_reqs) #Add planar requirements here (skip for planeswalkers)
         if len(choice) >= 2 and choice[:2] == "m_":
             global_vars.gm_deck = list(global_vars.decklist)
