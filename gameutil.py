@@ -14,7 +14,7 @@ def draw_card(deck, player, card_data = None, origin = 0, scale = 0.5):
         setcode = card_data["set"][0]#These variables always exist as lists, but only one should be present for name and set
         name = card_data["name"][0]#Only name and set are needed to find artwork
         if player == "main":
-            cardx = 10  # Lower left
+            cardx = 400  # Lower left
             cardy = global_vars.screen_height - 100
         elif player == "opponent" or origin==0:
             cardx = 10  # Upper left
@@ -47,7 +47,11 @@ class card():#Object that is present and rendered in a scene
         self.setcode = setcode
         self.name = name
         self.card_data=card_data
-    
+    def check_hit(self, pos):
+        if self.x <= pos[0] <= self.x + self.artwork.get_width() and self.y <= pos[1] <= self.y + self.artwork.get_height():
+            return(True)
+        else:
+            return(False)
     def handle_mouse_down(self, pos):
         if self.x <= pos[0] <= self.x + self.artwork.get_width() and self.y <= pos[1] <= self.y + self.artwork.get_height():
             self.dragging = True
@@ -122,6 +126,8 @@ class card():#Object that is present and rendered in a scene
             orig[1] -= self.artwork.get_height()
             self.x += orig[0]//2
             self.y += orig[1]//2
+            self.x = min(max(self.x,5 - self.width),global_vars.screen_width -5)
+            self.y = min(max(self.y,5 - self.height),global_vars.screen_height -5)
     def handle_scroll_down(self, pos):
         if self.x <= pos[0] <= self.x + self.artwork.get_width() and self.y <= pos[1] <= self.y + self.artwork.get_height():
             orig = list((self.artwork.get_width(), self.artwork.get_height()))
@@ -281,13 +287,16 @@ class deck_icon():#Object that is present and rendered in a scene, representing 
             else:
                 if len(self.deck):
                     draw_card(self.deck, self.owner, origin = self.origin, scale = 0.25)
-                    print(self.origin)
-                    print(len(self.deck))
                     self.card_num -=1
 
     def handle_mouse_up(self, pos):
         pass
-
+    
+    def check_hit(self, pos):
+        if self.x <= pos[0] <= self.x + self.size and self.y <= pos[1] <= self.y + self.size:
+            return(True)
+        else:
+            return(False)
     def handle_mouse_motion(self, pos):
         pass
     
@@ -358,6 +367,12 @@ class counter():#Object that is present and rendered in a scene, currently made 
     def handle_mouse_down(self, pos):#Only allow dragging for non-system counters, eg those created during the battle and not tracking important data
         if self.owner == "main" and self.x <= pos[0] <= self.x + 100*self.scale and self.y <= pos[1] <= self.y + 100*self.scale:
             self.dragging = True
+    
+    def check_hit(self, pos):
+        if self.x <= pos[0] <= self.x + 100*self.scale and self.y <= pos[1] <= self.y + 100*self.scale:
+            return(True)
+        else:
+            return(False)
 
     def handle_mouse_up(self, pos):
         self.dragging = False

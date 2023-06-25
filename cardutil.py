@@ -4,17 +4,6 @@ import numpy as np
 import pygame
 import os
 
-from globals import GlobalVariables
-
-#global_vars = GlobalVariables()
-#screen = global_vars.screen
-#screen_width = global_vars.screen_width
-#screen_height = global_vars.screen_height
-#scene = global_vars.scene
-#decklist = global_vars.decklist
-#gm_deck = global_vars.gm_deck
-#battle_deck = global_vars.battle_deck
-
     
 def match(card_e, params, exclusive, negparams=None, blankparams=None):
     all_params = set(params.keys())
@@ -54,7 +43,9 @@ def match(card_e, params, exclusive, negparams=None, blankparams=None):
 
 
 
-def select_cards(cards, n, params, exclusive=True, negparams=None, blankparams=None): #This, and the match function, and bottlenecks at gamesetup and should be improved
+def select_cards(cards, n, params, exclusive=True, negparams=None, blankparams=None): 
+    #This function is used when building many other parts, so should preferably not be dependent on imports within the game, consider moving if necessary
+    #This, and the match function, and bottlenecks at gamesetup and should be improved
     matching_cards = [card_e for card_e in cards if match(card_e, params, exclusive, negparams, blankparams)]
     if len(matching_cards):# < n:
         return random.choices(matching_cards, k=n) #choose with replacement, should this always be used instead of sample?

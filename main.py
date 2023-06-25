@@ -137,7 +137,11 @@ def construct_deck(i=15, node_details={}, card_list = shortened_card_data,boss=F
         if not "set" in params:
             print(params)
             params.update({"set" : planar_reqs})
-    return(select_cards(card_list, i, params, exclusive=exclusive,negparams=negparams, blankparams=blankparams))
+    cards = select_cards(card_list, i//2, params, exclusive=exclusive,negparams=negparams, blankparams=blankparams)
+    params["card_type"] = ["Creature"]
+    params["cmc"] = [c for c in range(4)]
+    cards2 = cards + select_cards(card_list, i//2 + i%2, params, exclusive=exclusive,negparams=negparams, blankparams=blankparams)
+    return(cards2)
 
 def update_minimap(event_queue = []):
     global global_vars
@@ -165,11 +169,15 @@ def update_minimap(event_queue = []):
                         #create appropriate dialogue box, handle events there eventually resulting in below, possibly via some storyline stuff
                         global_vars.node_details = node_details['data'].run(j, global_vars.storylines)
                         global_vars.scene = []
-                        global_vars.dialog == None
-                        global_vars.minimap_pos = i
-                        global_vars.minimap_lane = j
+                        dialog = global_vars.node_details["maptext"]
+                        global_vars.dialog = InputBox(
+                            x=global_vars.screen_width // 8,
+                            y=global_vars.screen_height // 4, 
+                            w = global_vars.screen_width*3 // 4,
+                            h = global_vars.screen_height // 4,
+                            prompt=dialog, text='', max_length=1, valid_chars='123')
+                        global_vars.planned_coords = [i,j]
                         start_new_battle(global_vars.gm_deck)#Refresh and shuffle decks in case they're used in dialogue
-                        game_state.change_state("event")
                     #This needs to , move the player to the selected node, show a pane with details, and include buttons for "test" (which will be handled later) or "battle, which constructs a GM deck based on that node's parameters and starts a battle
                 elif event.button == 3:  # Right-click
                     #Create appropriate dialogue box describing what is known about location
@@ -196,11 +204,17 @@ def update_minimap(event_queue = []):
             if dialog_input == 3:#Leave the event description
                 global_vars.dialog = None
             elif dialog_input == 1:#Go to the selected event
+                global_vars.minimap_pos = global_vars.planned_coords[0]
+                global_vars.minimap_lane = global_vars.planned_coords[1]
+                global_vars.dialog = None
+                game_state.change_state("event")
                 print("Need to work on going to the selected event")
                 
 
 def draw_minimap():
     global_vars.minimap.draw(global_vars.screen, global_vars.minimap_pos, global_vars.minimap_lane)
+    if global_vars.dialog is not None:
+        global_vars.dialog.draw(global_vars.screen)
 
 def check_params():
     if "fightparams" in global_vars.node_details: #Note that planar requirements shouldn't normally be present at this stage
@@ -351,6 +365,8 @@ def update_event(event_queue = []):
         choice = stagedata["method"][choicenum]
         if "diff" in stagedata: #Diff means that the difficulty is specified, and will no longer depend on the position on the map
             numcards = int(stagedata["diff"][choicenum%max(len(stagedata["diff"]),1)])
+            if numcards == -1:
+                numcards = int(global_vars.minimap_pos+5)
         else:
             numcards = int(global_vars.minimap_pos+5)
         print(global_vars.node_details)
@@ -360,12 +376,12 @@ def update_event(event_queue = []):
             choice = choice[2:]    
         if choice == "battle":
             global_vars.trade = False
-            global_vars.landlist = select_lands(global_vars.decklist)
-            global_vars.gm_land = select_lands(global_vars.gm_deck)
+            global_vars.landlist = select_lands(global_vars.decklist, total_lands = len(global_vars.decklist)+5)
+            global_vars.gm_land = select_lands(global_vars.gm_deck, total_lands = len(global_vars.gm_deck)+5)
             
         elif choice == "puzzle":
             global_vars.trade = False
-            global_vars.landlist = select_lands(global_vars.decklist)
+            global_vars.landlist = select_lands(global_vars.decklist, total_lands = len(global_vars.decklist)+5)
             global_vars.gm_land = None
             global_vars.gm_deck = list(global_vars.gm_deck[:3]) #construct_deck(3, global_vars.node_details, shortened_card_data, planar_reqs = planar_reqs)
         elif choice == "trade" or choice == "summon":
@@ -387,7 +403,7 @@ def update_event(event_queue = []):
         #Create a deck_icon item for each deck
         global_vars.scene.append(deck_icon(250, 0, global_vars.gm_deck, origin = 0))
         global_vars.scene.append(deck_icon(350, 0, global_vars.gm_land, origin = 1))
-        global_vars.scene.append(deck_icon(250, global_vars.screen_height - 100,  global_vars.decklist,owner= "main", origin = 2))
+        global_vars.scene.append(deck_icon(250, global_vars.screen_height - 100,  global_vars.battle_deck,owner= "main", origin = 2))
         global_vars.scene.append(deck_icon(350, global_vars.screen_height - 100, global_vars.landlist, owner= "main", origin = 3))
         if choice == "battle": #Create counters and life totals
             global_vars.combat = True
@@ -425,12 +441,24 @@ def update_event(event_queue = []):
                 if available:
                     for card in reward:
                         draw_card(deck=None, player="opponent", card_data = card, origin=0)
+        global_vars.dialog = None
         game_state.change_state("battle")#Every event type is resolved using a battle, even if it isn't a fight
 def draw_event():
     global_vars.dialog.draw(global_vars.screen)
     for item in global_vars.scene: 
         item.draw()
 
+def check_zone(x, y):
+    border_width = 300
+    zone = 0 #Main play area
+    if x < border_width:
+        zone = 1#Opponent hand
+    elif global_vars.screen_height - y < border_width:
+        zone = 2#Plqyer hand
+    elif global_vars.screen_width - x < border_width:
+        zone = 3 #Misc eg graveyards
+    return(zone)
+        
 def update_battle(event_queue = []):
     while event_queue:
         event = event_queue.pop(0)
@@ -475,22 +503,24 @@ def update_battle(event_queue = []):
                 global_vars.scene = []
                 game_state.change_state("minimap")
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left-click
-                for item in global_vars.scene:
-                    item.handle_mouse_down(pygame.mouse.get_pos())
-            elif event.button == 3:  # Right-click
-                for item in global_vars.scene:
-                    item.handle_right_click(pygame.mouse.get_pos(), trade = global_vars.trade)
-            elif event.button == 2:  # Middle-click
-                for item in global_vars.scene:
-                    item.handle_middle_click(pygame.mouse.get_pos())
-                
-            elif event.button == 4:  # Scroll up
-                for item in global_vars.scene:
-                    item.handle_scroll_up(pygame.mouse.get_pos())
-            elif event.button == 5:  # Scroll down
-                for item in global_vars.scene:
-                    item.handle_scroll_down(pygame.mouse.get_pos())
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            zone = check_zone(mouse_x, mouse_y)
+            done = False
+            for item in reversed(global_vars.scene):
+                if type(item)==card or not done:
+                    if type(item)==card and item.check_hit((mouse_x, mouse_y)):
+                        done = True
+                    if event.button == 1:  # Left-click
+                        item.handle_mouse_down((mouse_x, mouse_y))
+                    elif event.button == 3:  # Right-click
+                        item.handle_right_click((mouse_x, mouse_y), trade = global_vars.trade)
+                    elif event.button == 2:  # Middle-click
+                        item.handle_middle_click((mouse_x, mouse_y))
+                    elif event.button == 4:  # Scroll up
+                        item.handle_scroll_up((mouse_x, mouse_y))
+                    elif event.button == 5:  # Scroll down
+                        item.handle_scroll_down((mouse_x, mouse_y))
+            done = False
         if event.type == pygame.MOUSEBUTTONUP:
             for item in global_vars.scene:
                 item.handle_mouse_up(pygame.mouse.get_pos())
@@ -498,12 +528,31 @@ def update_battle(event_queue = []):
             for item in global_vars.scene:
                 item.handle_mouse_motion(pygame.mouse.get_pos())
     # Update card positions, needs to be outside of event loop in order to stack cards
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    zone = check_zone(mouse_x, mouse_y)
     dragging_cards = [card for card in global_vars.scene if card.dragging] #This refers to cards, but the same logic will be used for counters, tokens, etc.
+    scax = 0
+    scay = 75
+    offx = 0
+    offt = 0
+    offy = 0
     for i, dragged_card in enumerate(dragging_cards):
         dragged_card.dragging_index = i
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        dragged_card.x = min(max(mouse_x - dragged_card.width // 2,5 - dragged_card.width),global_vars.screen_width -5) #Apply horizontal movement, keeping within 5 pixels of being hidden
-        dragged_card.y = min(max(mouse_y - dragged_card.height // 2 + i * (max(50 - 3*len(dragging_cards),5)),5 - dragged_card.height),global_vars.screen_height -5)  # Apply vertical offset
+        if zone == 2:
+            dragged_card.x = min(max(mouse_x - dragged_card.width//2 +offx
+                                     ,5 - dragged_card.width),global_vars.screen_width -5)
+            dragged_card.y = global_vars.screen_height//2 -100 + mouse_y//2
+            offx += min(dragged_card.width+5, (global_vars.screen_width-mouse_x+dragged_card.width/2)//len(dragging_cards))#//max(1,len(dragging_cards)-7)
+        elif zone == 3:
+            dragged_card.x = min(max(mouse_x - dragged_card.width // 2,5 - dragged_card.width),global_vars.screen_width -5)
+            dragged_card.y = min(max(mouse_y - dragged_card.height // 2,5 - dragged_card.height),global_vars.screen_height -5)
+        else:
+            dragged_card.x = min(max((offt+40*dragged_card.scale)*dragged_card.tapped + offx + mouse_x - dragged_card.width // 2,5 - dragged_card.width),global_vars.screen_width -5) #Apply horizontal movement, keeping within 5 pixels of being hidden
+            dragged_card.y = min(max(offy + mouse_y - dragged_card.height // 2,5 - dragged_card.height),global_vars.screen_height -5)  # Apply vertical offset
+            #+ i * (max(50 - 3*len(dragging_cards),5))
+            offx += scax*dragged_card.scale
+            offy += scay*dragged_card.scale*(1-dragged_card.tapped)
+            offt -= scay*dragged_card.scale*dragged_card.tapped
         # Move the dragged card to the end of the scene list
         global_vars.scene.remove(dragged_card)
         global_vars.scene.append(dragged_card)

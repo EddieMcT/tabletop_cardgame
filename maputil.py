@@ -92,14 +92,17 @@ def generate_random_node(world_name, lane_idx, exists = True,is_start=False, is_
         else:
             event_key = random.choice(world[event_type][lane])
             data = event[event_key]
-            if event_type == "faction_event":
-                details = "Faction"#f"A meeting with the {data['name']}, potential friends or foes."
-            elif event_type == "story_event":
-                details = ""
-            elif event_type == "world_event":
-                details = ""
-            else:
-                details = ""
+            try:
+                details = event.maptext
+            except:
+                if event_type == "faction_event":
+                    details = "Faction"#f"A meeting with the {data['name']}, potential friends or foes."
+                elif event_type == "story_event":
+                    details = ""
+                elif event_type == "world_event":
+                    details = ""
+                else:
+                    details = ""
         # Add elif branches for other event types to fill in details
     return {"event": event_type, "details": details, "data" : data}
 def generate_random_locations(num_nodes, num_lanes):

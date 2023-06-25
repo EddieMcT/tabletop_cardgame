@@ -29,6 +29,7 @@ class GlobalVariables:
             cls._instance.combat = False #Whether the current event is true combat
             cls._instance.currency = 0 #Wallet of the main character
             cls._instance.node_details = None
+            cls._instance.planned_coords = [0,0]
             cls._instance.storylines = {'storyplace':0} #Something to be moved to a save file? Information about where the player is in each story
             cls._instance.gifts = {'storyplace':0} #Equivalent, but tracks whether the player has sold the right kind of card
         return cls._instance
